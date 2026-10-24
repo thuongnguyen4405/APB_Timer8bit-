@@ -1,0 +1,30 @@
+package test_pkg;
+  timeunit 1ns;
+  timeprecision 1ps;
+  import timer_pkg::*;
+  `include "base_test.sv"
+  `include "register_reset_test.sv"
+  `include "register_rw_test.sv"
+  `include "register_reset_on_fly_test.sv"
+  `include "reserved_fields_address_test.sv"
+  `include "tsr_w1c_test.sv"
+  `include "tsr_selective_clear_test.sv"
+  `include "random_register_access_test.sv"
+  `include "clock_div1_test.sv"
+  `include "clock_div2_test.sv"
+  `include "clock_div4_test.sv"
+  `include "clock_div8_test.sv"
+  `include "counter_load_test.sv"
+  `include "timer_enable_disable_test.sv"
+  `include "counter_count_up_test.sv"
+  `include "counter_count_down_test.sv"
+  `include "counter_overflow_test.sv"
+  `include "counter_underflow_test.sv"
+  `include "random_counter_config_test.sv"
+  `include "overflow_interrupt_test.sv"
+  `include "underflow_interrupt_test.sv"
+  `include "interrupt_mask_test.sv"
+  `include "irq_enable_independence_test.sv"
+  `include "status_polling_test.sv"
+  `include "random_irq_mask_test.sv"
+endpackage

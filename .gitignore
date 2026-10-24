@@ -1,0 +1,12 @@
+# Questa artifacts
+sim/work/
+sim/log/
+sim/vsim.wlf
+sim/vsim.db/
+sim/transcript
+sim/*.ucdb
+sim/*.log
+sim/regression_summary.csv
+# Institutional protected RTL is NOT distributed in this project.
+rtl/*.vp
+rtl/timer_top.v
