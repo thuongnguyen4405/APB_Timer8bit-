@@ -1,6 +1,6 @@
 > **UPDATE:** Kiến trúc đã đổi để `base_test.sv` tạo packet trực tiếp và gửi tới Stimulus như bài I2C ICTC. Đọc `docs/BASE_TEST_FLOW_VN.md` trước; đoạn mô tả cũ nếu nhắc `env.apb_write/read` là không còn áp dụng.
 
-#  Project  — 8-bit Timer DV (easy-to-explain version)
+#  Project  — 8-bit Timer DV 
 
 Non-UVM SystemVerilog | 24 cases | one compile, many `+TESTNAME` runs.
 
