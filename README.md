@@ -32,6 +32,8 @@ make -f Makefile.dv run TESTNAME=register_rw_test SEED=1
 python3 regress.py --quick
 python3 regress.py --seeds 3
 ```
+example: make run TESTNAME=register_rw_test SEED=1
+<img width="883" height="820" alt="image" src="https://github.com/user-attachments/assets/11a8eea6-799f-4f25-99c4-be6766e5478c" />
 
 Compiler order from `sim/tb.f`: `dut_interface -> timer_pkg -> test_pkg -> testbench`.
 Read `docs/WHAT_CHANGED.md` before copying over hand-edited server files.
