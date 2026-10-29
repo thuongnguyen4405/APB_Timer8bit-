@@ -1,47 +1,179 @@
-// VPlan: Clock Divisor | clock_div8_test | Directed; no scenario helper hidden in env.
+
+ // VPlan: Clock Divisor | clock_div8_test | Directed
 class clock_div8_test extends base_test;
+
   function new(virtual dut_if v);
-    super.new(v,"clock_div8_test");
+    super.new(v, "clock_div8_test");
   endfunction
+
   virtual task run_scenario();
-    bit first,second;
+    bit first, second;
     logic [7:0] status;
-    realtime t_first,t_second,interval_ns;
-    // 1. Set clk_div=2'b11 (/ 8), load 00, count up, clear TSR.
-    write(8'h00,8'h00);
-    write(8'h01,8'h03);
-    write(8'h02,8'h00);
-    write(8'h00,8'h1c); // LOAD; disabled
-    write(8'h00,8'h18); // clear LOAD
-    write(8'h00,8'h19); // enable
-    // 2. Observe first overflow by polling TSR[0].
-    first=0;
-    for (int k=0;k<1500;k++) begin
-      read(8'h01,status);
-      if (status[0]) begin first=1; break; end
+    realtime t_first, t_second, interval_ns;
+
+    // KER_CLK = 200 MHz => 5 ns
+    // Divider /8 => Counter tick = 40 ns
+    // 8-bit Counter => 256 * 40 = 10240 ns
+    // Tolerance +/-30% => 7168 to 13312 ns
+
+
+    // ==========================================
+    // PART 1: DIVIDER /8 - COUNT UP
+    // ==========================================
+
+    $display("[DIV/8] START COUNT UP");
+
+    // 1. Disable Timer and clear TSR.
+    write(8'h00, 8'h00);
+    write(8'h01, 8'h03);
+
+    // 2. Load Counter = 00.
+    write(8'h02, 8'h00);
+    write(8'h00, 8'h1C); // DIV/8, UP, LOAD=1
+    write(8'h00, 8'h18); // Clear LOAD
+    write(8'h00, 8'h19); // Enable Count Up
+
+    // 3. Poll first Overflow: TSR[0].
+    first = 0;
+
+    for (int k = 0; k < 500; k++) begin
+      read(8'h01, status);
+
+      if (status[0]) begin
+        first = 1;
+        break;
+      end
     end
-    env.expect_bit("first overflow",first,1);
-    if (!first) return;
-    t_first=$realtime;
-    write(8'h01,8'h01); // W1C; keep timer running
-    // 3. Observe next overflow and compare approximately 256 ticks apart.
-    second=0;
-    for (int k=0;k<1500;k++) begin
-      read(8'h01,status);
-      if (status[0]) begin second=1; break; end
+
+    env.expect_bit("UP: first overflow", first, 1);
+
+    if (!first) begin
+      write(8'h00, 8'h18); // Stop Timer
+      return;
     end
-    env.expect_bit("second overflow",second,1);
-    t_second=$realtime;
-    write(8'h00,8'h18); // stop
+
+    t_first = $realtime / 1ns;
+
+    // 4. Clear Overflow using W1C.
+    // Timer continues counting.
+    write(8'h01, 8'h01);
+
+    // 5. Poll second Overflow.
+    second = 0;
+
+    for (int k = 0; k < 500; k++) begin
+      read(8'h01, status);
+
+      if (status[0]) begin
+        second = 1;
+        break;
+      end
+    end
+
+    env.expect_bit("UP: second overflow", second, 1);
+
+    t_second = $realtime / 1ns;
+
+    write(8'h00, 8'h18); // Stop Timer
+
     if (!second) return;
-    interval_ns=t_second-t_first;
+
+    // 6. Check Overflow interval.
+    interval_ns = t_second - t_first;
+
+    $display("[DIV/8 UP] Interval = %0.2f ns",
+             interval_ns);
+
     env.test_checks++;
-    // APB polling is coarse: this is a broad frequency sanity check, not exact jitter measurement.
-    $display("[DIV/8] two-wrap interval=%0.2f ns, nominal=10240 ns",interval_ns);
-    if (interval_ns < 10240*0.70 || interval_ns > 10240*1.30) begin
+
+    if (interval_ns < 7168.0 ||
+        interval_ns > 13312.0) begin
+
       env.test_errors++;
-      $error("[DIV/8] observed interval outside +/-30%% polling tolerance");
+
+      $error("[DIV/8 UP] Interval outside +/-30%% tolerance");
     end
-    // PASS: both events observed and external wrap interval roughly matches the divider.
+
+
+    // ==========================================
+    // PART 2: DIVIDER /8 - COUNT DOWN
+    // ==========================================
+
+    $display("[DIV/8] START COUNT DOWN");
+
+    // 1. Disable Timer and clear TSR.
+    write(8'h00, 8'h18);
+    write(8'h01, 8'h03);
+
+    // 2. Load Counter = FF.
+    write(8'h02, 8'hFF);
+    write(8'h00, 8'h1E); // DIV/8, DOWN, LOAD=1
+    write(8'h00, 8'h1A); // Clear LOAD, keep DOWN
+    write(8'h00, 8'h1B); // Enable Count Down
+
+    // 3. Poll first Underflow: TSR[1].
+    first = 0;
+
+    for (int k = 0; k < 500; k++) begin
+      read(8'h01, status);
+
+      if (status[1]) begin
+        first = 1;
+        break;
+      end
+    end
+
+    env.expect_bit("DOWN: first underflow", first, 1);
+
+    if (!first) begin
+      write(8'h00, 8'h1A); // Stop Timer
+      return;
+    end
+
+    t_first = $realtime / 1ns;
+
+    // 4. Clear Underflow using W1C.
+    // Timer continues counting.
+    write(8'h01, 8'h02);
+
+    // 5. Poll second Underflow.
+    second = 0;
+
+    for (int k = 0; k < 500; k++) begin
+      read(8'h01, status);
+
+      if (status[1]) begin
+        second = 1;
+        break;
+      end
+    end
+
+    env.expect_bit("DOWN: second underflow", second, 1);
+
+    t_second = $realtime / 1ns;
+
+    write(8'h00, 8'h1A); // Stop Timer
+
+    if (!second) return;
+
+    // 6. Check Underflow interval.
+    interval_ns = t_second - t_first;
+
+    $display("[DIV/8 DOWN] Interval = %0.2f ns",
+             interval_ns);
+
+    env.test_checks++;
+
+    if (interval_ns < 7168.0 ||
+        interval_ns > 13312.0) begin
+
+      env.test_errors++;
+
+      $error("[DIV/8 DOWN] Interval outside +/-30%% tolerance");
+    end
+
+    $display("[DIV/8] UP and DOWN checks completed");
+
   endtask
+
 endclass
